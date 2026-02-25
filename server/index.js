@@ -1,9 +1,11 @@
 const express = require("express");
 const http = require("http");
+const crypto = require("crypto");
 const { Server } = require("socket.io");
 const cors = require("cors");
 
 const app = express();
+app.set("trust proxy", "loopback");
 
 const ALLOWED_ORIGINS = [
   "https://callingmolling.com",
@@ -12,6 +14,44 @@ const ALLOWED_ORIGINS = [
 ];
 
 app.use(cors({ origin: ALLOWED_ORIGINS }));
+
+const TURN_SECRET = process.env.TURN_SECRET;
+const TURN_DOMAIN = process.env.TURN_DOMAIN || "callingmolling.com";
+
+// Rate limiting for /turn-credentials: 10 req/min per IP
+const rateLimitMap = new Map();
+setInterval(() => rateLimitMap.clear(), 60 * 1000);
+
+app.get("/turn-credentials", (req, res) => {
+  if (!TURN_SECRET) {
+    return res.status(503).json({ error: "TURN not configured" });
+  }
+
+  const ip = req.ip;
+  const count = rateLimitMap.get(ip) || 0;
+  if (count >= 10) {
+    return res.status(429).json({ error: "Too many requests" });
+  }
+  rateLimitMap.set(ip, count + 1);
+
+  const ttl = 3600;
+  const username = String(Math.floor(Date.now() / 1000) + ttl);
+  const credential = crypto
+    .createHmac("sha1", TURN_SECRET)
+    .update(username)
+    .digest("base64");
+
+  res.json({
+    username,
+    credential,
+    ttl,
+    uris: [
+      `turn:${TURN_DOMAIN}:3478?transport=udp`,
+      `turn:${TURN_DOMAIN}:3478?transport=tcp`,
+      `turns:${TURN_DOMAIN}:5349?transport=tcp`,
+    ],
+  });
+});
 
 const server = http.createServer(app);
 const io = new Server(server, {

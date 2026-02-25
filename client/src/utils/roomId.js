@@ -14,3 +14,8 @@ export function generateRoomId(length = 6) {
 export function isValidRoomId(id) {
   return typeof id === "string" && /^[A-Z2-9]{6}$/.test(id);
 }
+
+export function getRoomIdFromURL() {
+  const path = window.location.pathname.slice(1).toUpperCase();
+  return isValidRoomId(path) ? path : null;
+}

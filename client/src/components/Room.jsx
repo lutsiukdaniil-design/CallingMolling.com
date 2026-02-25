@@ -31,8 +31,9 @@ export default function Room({ roomId, onLeave }) {
     onLeave();
   };
 
-  const copyRoomId = () => {
-    navigator.clipboard.writeText(roomId).then(() => {
+  const copyRoomLink = () => {
+    const link = `${window.location.origin}/${roomId}`;
+    navigator.clipboard.writeText(link).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }).catch(() => {
@@ -50,15 +51,15 @@ export default function Room({ roomId, onLeave }) {
 
       <div className="room-card">
         <div className="room-id-section">
-          <span className="room-label">Room Code</span>
-          <div className="room-id-display" onClick={copyRoomId} title="Click to copy">
+          <span className="room-label">Room Link</span>
+          <div className="room-id-display" onClick={copyRoomLink} title="Click to copy link">
             {roomId.split("").map((char, i) => (
               <span key={i} className="room-char">
                 {char}
               </span>
             ))}
           </div>
-          <span className="copy-hint">{copied ? "Copied!" : "Click to copy"}</span>
+          <span className="copy-hint">{copied ? "Copied!" : "Click to copy link"}</span>
         </div>
 
         <StatusIndicator state={connectionState} />

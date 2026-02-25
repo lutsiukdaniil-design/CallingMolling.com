@@ -1,6 +1,7 @@
-import { useState, Component } from "react";
+import { useState, useEffect, useCallback, Component } from "react";
 import Home from "./components/Home.jsx";
 import Room from "./components/Room.jsx";
+import { getRoomIdFromURL } from "./utils/roomId.js";
 import "./App.css";
 
 class ErrorBoundary extends Component {
@@ -39,14 +40,32 @@ class ErrorBoundary extends Component {
 }
 
 export default function App() {
-  const [activeRoomId, setActiveRoomId] = useState(null);
+  const [activeRoomId, setActiveRoomId] = useState(() => getRoomIdFromURL());
+
+  const enterRoom = useCallback((id) => {
+    setActiveRoomId(id);
+    window.history.pushState({}, "", "/" + id);
+  }, []);
+
+  const leaveRoom = useCallback(() => {
+    setActiveRoomId(null);
+    window.history.pushState({}, "", "/");
+  }, []);
+
+  useEffect(() => {
+    const onPopState = () => {
+      setActiveRoomId(getRoomIdFromURL());
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
 
   return (
     <ErrorBoundary>
       {activeRoomId ? (
-        <Room roomId={activeRoomId} onLeave={() => setActiveRoomId(null)} />
+        <Room roomId={activeRoomId} onLeave={leaveRoom} />
       ) : (
-        <Home onJoinRoom={(id) => setActiveRoomId(id)} />
+        <Home onJoinRoom={enterRoom} />
       )}
     </ErrorBoundary>
   );

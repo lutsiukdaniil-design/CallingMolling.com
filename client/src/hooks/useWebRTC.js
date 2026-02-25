@@ -1,13 +1,32 @@
 import { useRef, useState, useCallback, useEffect } from "react";
 import socket from "../services/socket.js";
 
-const ICE_SERVERS = {
+const STUN_ONLY = {
   iceServers: [
     { urls: "stun:stun.l.google.com:19302" },
     { urls: "stun:stun1.l.google.com:19302" },
-    { urls: "stun:stun2.l.google.com:19302" },
   ],
 };
+
+async function fetchIceServers() {
+  try {
+    const res = await fetch("/turn-credentials");
+    if (!res.ok) return STUN_ONLY;
+    const data = await res.json();
+    return {
+      iceServers: [
+        { urls: "stun:stun.l.google.com:19302" },
+        ...data.uris.map((uri) => ({
+          urls: uri,
+          username: data.username,
+          credential: data.credential,
+        })),
+      ],
+    };
+  } catch {
+    return STUN_ONLY;
+  }
+}
 
 export default function useWebRTC(roomId) {
   const [connectionState, setConnectionState] = useState("new");
@@ -20,6 +39,7 @@ export default function useWebRTC(roomId) {
   const isInitiatorRef = useRef(false);
   const pendingCandidatesRef = useRef([]);
   const offerCreatedRef = useRef(false);
+  const iceConfigRef = useRef(STUN_ONLY);
 
   const cleanup = useCallback(() => {
     if (pcRef.current) {
@@ -51,7 +71,7 @@ export default function useWebRTC(roomId) {
       pcRef.current.close();
     }
 
-    const pc = new RTCPeerConnection(ICE_SERVERS);
+    const pc = new RTCPeerConnection(iceConfigRef.current);
 
     pc.onicecandidate = (e) => {
       if (e.candidate) {
@@ -182,6 +202,8 @@ export default function useWebRTC(roomId) {
       return;
     }
     localStreamRef.current = stream;
+
+    iceConfigRef.current = await fetchIceServers();
 
     if (!socket.connected) {
       socket.connect();
