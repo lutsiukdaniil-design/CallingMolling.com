@@ -1,0 +1,378 @@
+/* ===== Home ===== */
+.home {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 48px;
+  padding: 24px;
+}
+
+.hero {
+  text-align: center;
+}
+
+.title {
+  font-size: 2.8rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.accent {
+  background: linear-gradient(135deg, var(--accent), #a78bfa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.subtitle {
+  margin-top: 8px;
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+}
+
+.cards {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 32px;
+  width: 280px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.card h2 {
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.card p {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.divider {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+/* ===== Buttons ===== */
+.btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background: var(--accent-hover);
+  box-shadow: 0 0 20px var(--accent-glow);
+}
+
+.btn-secondary {
+  background: var(--bg-input);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+}
+
+.btn-secondary:hover {
+  border-color: var(--accent);
+  background: var(--bg-secondary);
+}
+
+/* ===== Form ===== */
+.join-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.input {
+  padding: 12px 16px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 1.1rem;
+  font-family: "JetBrains Mono", "Fira Code", monospace;
+  text-align: center;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.input::placeholder {
+  color: var(--text-secondary);
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+/* ===== Room ===== */
+.room {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+  padding: 24px;
+}
+
+.room-header .title {
+  font-size: 1.8rem;
+}
+
+.room-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+  min-width: 340px;
+}
+
+.room-id-section {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.room-label {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-secondary);
+}
+
+.room-id-display {
+  display: flex;
+  gap: 6px;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+
+.room-id-display:hover {
+  transform: scale(1.05);
+}
+
+.room-char {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-family: "JetBrains Mono", "Fira Code", monospace;
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.copy-hint {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+/* ===== Status Indicator ===== */
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status-dot.pulse {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 currentColor;
+  }
+  50% {
+    opacity: 0.6;
+    box-shadow: 0 0 0 6px transparent;
+  }
+}
+
+.status-text {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+/* ===== Call Controls ===== */
+.controls {
+  display: flex;
+  gap: 16px;
+}
+
+.btn-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.btn-icon:hover {
+  background: var(--bg-secondary);
+  border: 1px solid var(--accent);
+}
+
+.btn-icon.btn-danger {
+  background: var(--danger);
+  color: #fff;
+}
+
+.btn-icon.btn-danger:hover {
+  background: var(--danger-hover);
+  border: none;
+}
+
+.btn-end {
+  background: var(--danger);
+  color: #fff;
+}
+
+.btn-end:hover {
+  background: var(--danger-hover);
+  border: none;
+}
+
+/* ===== Error Banner ===== */
+.error-banner {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  text-align: center;
+  width: 100%;
+}
+
+.input-error {
+  color: #fca5a5;
+  font-size: 0.8rem;
+}
+
+/* ===== Error Page ===== */
+.error-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  min-height: 60vh;
+  text-align: center;
+}
+
+.error-page p {
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+}
+
+/* ===== Mobile ===== */
+@media (max-width: 480px) {
+  .home {
+    gap: 32px;
+    padding: 20px 16px;
+  }
+
+  .title {
+    font-size: 2rem;
+  }
+
+  .subtitle {
+    font-size: 0.95rem;
+  }
+
+  .cards {
+    gap: 20px;
+    width: 100%;
+  }
+
+  .card {
+    width: 100%;
+    padding: 24px 20px;
+  }
+
+  .divider {
+    font-size: 0.8rem;
+  }
+
+  .room {
+    gap: 24px;
+    padding: 20px 16px;
+  }
+
+  .room-header .title {
+    font-size: 1.5rem;
+  }
+
+  .room-card {
+    min-width: unset;
+    width: 100%;
+    padding: 28px 20px;
+    gap: 24px;
+  }
+
+  .room-char {
+    padding: 6px 8px;
+    font-size: 1.15rem;
+    border-radius: 5px;
+  }
+
+  .room-id-display {
+    gap: 4px;
+  }
+
+  .btn-icon {
+    width: 50px;
+    height: 50px;
+  }
+
+  .error-page {
+    padding: 20px 16px;
+  }
+}
