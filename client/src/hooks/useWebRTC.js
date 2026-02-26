@@ -31,6 +31,8 @@ async function fetchIceServers() {
 export default function useWebRTC(roomId) {
   const [connectionState, setConnectionState] = useState("new");
   const [isMuted, setIsMuted] = useState(false);
+  const [isVideoEnabled, setIsVideoEnabled] = useState(false);
+  const [localStream, setLocalStream] = useState(null);
   const [remoteStream, setRemoteStream] = useState(null);
   const [error, setError] = useState(null);
 
@@ -40,6 +42,9 @@ export default function useWebRTC(roomId) {
   const pendingCandidatesRef = useRef([]);
   const offerCreatedRef = useRef(false);
   const iceConfigRef = useRef(STUN_ONLY);
+  const videoTrackRef = useRef(null);
+  const videoSenderRef = useRef(null);
+  const makingOfferRef = useRef(false);
 
   const cleanup = useCallback(() => {
     if (pcRef.current) {
@@ -50,10 +55,18 @@ export default function useWebRTC(roomId) {
       localStreamRef.current.getTracks().forEach((t) => t.stop());
       localStreamRef.current = null;
     }
+    if (videoTrackRef.current) {
+      videoTrackRef.current.stop();
+      videoTrackRef.current = null;
+    }
+    videoSenderRef.current = null;
     offerCreatedRef.current = false;
+    makingOfferRef.current = false;
     setRemoteStream(null);
+    setLocalStream(null);
     setConnectionState("new");
     setIsMuted(false);
+    setIsVideoEnabled(false);
     setError(null);
     pendingCandidatesRef.current = [];
   }, []);
@@ -96,9 +109,27 @@ export default function useWebRTC(roomId) {
       }
     };
 
+    pc.onnegotiationneeded = async () => {
+      if (makingOfferRef.current) return;
+      if (pc.signalingState !== "stable") return;
+      try {
+        makingOfferRef.current = true;
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        socket.emit("offer", roomId, pc.localDescription);
+      } catch (err) {
+        console.error("Renegotiation failed:", err);
+      } finally {
+        makingOfferRef.current = false;
+      }
+    };
+
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach((track) => {
-        pc.addTrack(track, localStreamRef.current);
+        const sender = pc.addTrack(track, localStreamRef.current);
+        if (track.kind === "video") {
+          videoSenderRef.current = sender;
+        }
       });
     }
 
@@ -111,6 +142,7 @@ export default function useWebRTC(roomId) {
     offerCreatedRef.current = true;
 
     try {
+      makingOfferRef.current = true;
       const pc = createPeerConnection();
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
@@ -120,13 +152,29 @@ export default function useWebRTC(roomId) {
       console.error("Failed to create offer:", err);
       setError("Failed to establish connection.");
       offerCreatedRef.current = false;
+    } finally {
+      makingOfferRef.current = false;
     }
   }, [roomId, createPeerConnection]);
 
   const handleOffer = useCallback(
     async (offer) => {
       try {
-        const pc = createPeerConnection();
+        let pc = pcRef.current;
+        if (!pc) {
+          pc = createPeerConnection();
+        } else {
+          // Glare protection: polite peer rolls back
+          if (pc.signalingState !== "stable") {
+            if (!isInitiatorRef.current) {
+              await pc.setLocalDescription({ type: "rollback" });
+              makingOfferRef.current = false;
+            } else {
+              return;
+            }
+          }
+        }
+
         await pc.setRemoteDescription(new RTCSessionDescription(offer));
 
         for (const candidate of pendingCandidatesRef.current) {
@@ -181,6 +229,8 @@ export default function useWebRTC(roomId) {
       pcRef.current = null;
     }
     offerCreatedRef.current = false;
+    videoSenderRef.current = null;
+    makingOfferRef.current = false;
     setRemoteStream(null);
     setConnectionState("disconnected");
     pendingCandidatesRef.current = [];
@@ -202,6 +252,7 @@ export default function useWebRTC(roomId) {
       return;
     }
     localStreamRef.current = stream;
+    setLocalStream(stream);
 
     iceConfigRef.current = await fetchIceServers();
 
@@ -261,6 +312,62 @@ export default function useWebRTC(roomId) {
     setIsMuted((prev) => !prev);
   }, []);
 
+  const toggleVideo = useCallback(async () => {
+    const pc = pcRef.current;
+    if (!pc) return;
+
+    // Currently sending video → turn off via replaceTrack(null)
+    // This stops RTP, causing remote track to fire 'mute'
+    if (videoSenderRef.current && videoSenderRef.current.track) {
+      await videoSenderRef.current.replaceTrack(null);
+      setIsVideoEnabled(false);
+      return;
+    }
+
+    // Sender exists but track was nulled → re-enable with existing live track
+    if (
+      videoSenderRef.current &&
+      videoTrackRef.current &&
+      videoTrackRef.current.readyState === "live"
+    ) {
+      await videoSenderRef.current.replaceTrack(videoTrackRef.current);
+      setIsVideoEnabled(true);
+      return;
+    }
+
+    // First time or track was stopped → acquire new camera
+    try {
+      const videoStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user" },
+      });
+      const videoTrack = videoStream.getVideoTracks()[0];
+      videoTrackRef.current = videoTrack;
+
+      // Add video track to local stream for PiP preview
+      if (localStreamRef.current) {
+        localStreamRef.current.addTrack(videoTrack);
+        setLocalStream(new MediaStream(localStreamRef.current.getTracks()));
+      }
+
+      if (videoSenderRef.current) {
+        // Reuse existing sender (track ended, sender still has transceiver)
+        await videoSenderRef.current.replaceTrack(videoTrack);
+      } else {
+        // First time — addTrack triggers onnegotiationneeded
+        videoSenderRef.current = pc.addTrack(videoTrack, localStreamRef.current);
+      }
+
+      setIsVideoEnabled(true);
+    } catch (err) {
+      console.error("Camera access failed:", err);
+      setError(
+        err.name === "NotAllowedError"
+          ? "Camera access denied. Please allow camera access and try again."
+          : "Could not access camera. Check that it is connected and not in use."
+      );
+    }
+  }, []);
+
   const endCall = useCallback(() => {
     socket.emit("leave-room");
     removeSocketListeners();
@@ -281,10 +388,13 @@ export default function useWebRTC(roomId) {
   return {
     connectionState,
     isMuted,
+    isVideoEnabled,
+    localStream,
     remoteStream,
     error,
     start,
     toggleMute,
+    toggleVideo,
     endCall,
   };
 }

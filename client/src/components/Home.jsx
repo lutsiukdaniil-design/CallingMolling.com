@@ -28,7 +28,7 @@ export default function Home({ onJoinRoom }) {
         <h1 className="title">
           Calling<span className="accent">Molling</span>
         </h1>
-        <p className="subtitle">Secure peer-to-peer audio calls</p>
+        <p className="subtitle">Secure peer-to-peer calls</p>
       </div>
 
       <div className="cards">
